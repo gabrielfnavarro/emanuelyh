@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para você</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Montserrat:wght@200&display=swap');
+
+        body, html {
+            margin: 0; padding: 0; 
+            width: 100vw; height: 100vh;
+            background-color: #0c0812; 
+            color: #e6d3ea;
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        .bg-glow {
+            position: absolute; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(82, 38, 105, 0.15) 0%, transparent 70%);
+            animation: breathe 8s infinite ease-in-out;
+            z-index: 0;
+        }
+
+        .content {
+            position: relative; z-index: 10;
+            text-align: center;
+            width: 90%;
+            max-height: 98vh;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+        .content::-webkit-scrollbar { display: none; }
+
+        .photo-stack {
+            position: relative;
+            width: 180px; height: 230px;
+            margin: 0 auto 15px auto;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .polaroid {
+            position: absolute; top: 0; left: 0;
+            background: #fff;
+            padding: 8px 8px 25px 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.6s;
+            user-select: none;
+        }
+
+        .polaroid img { width: 164px; height: 170px; object-fit: cover; pointer-events: none; }
+        .polaroid span { display: block; color: #333; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.7rem; margin-top: 5px; }
+        .polaroid:nth-child(1) { transform: rotate(-3deg); z-index: 3; }
+        .polaroid:nth-child(2) { transform: rotate(2deg); z-index: 2; }
+        .polaroid:nth-child(3) { transform: rotate(-1deg); z-index: 1; }
+        .polaroid.exit { transform: translateX(150%) rotate(20deg) !important; opacity: 0; }
+
+        .interaction-card {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(230, 211, 234, 0.05);
+        }
+
+        .emojis { display: flex; justify-content: center; gap: 15px; font-size: 1.2rem; margin-top: 5px; }
+        .emojis span { cursor: pointer; transition: 0.3s; }
+        .emojis span:hover { transform: scale(1.3); }
+
+        .proximity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        .btn-prox {
+            background: rgba(230, 211, 234, 0.05);
+            border: 1px solid rgba(230, 211, 234, 0.1);
+            color: #e6d3ea;
+            padding: 8px 4px;
+            border-radius: 6px;
+            font-size: 0.5rem;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .thought-counter { font-size: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .star-btn { font-size: 1.4rem; cursor: pointer; transition: 0.3s; }
+        
+        .btn-small {
+            background: rgba(230, 211, 234, 0.05);
+            border: 1px solid rgba(230, 211, 234, 0.1);
+            color: #e6d3ea;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.45rem;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+
+        .btn-travei {
+            background: rgba(184, 162, 194, 0.08);
+            border: 1px dashed rgba(184, 162, 194, 0.3);
+            color: #b8a2c2;
+            width: 100%;
+            padding: 8px;
+            margin-top: 8px;
+            border-radius: 8px;
+            font-size: 0.55rem;
+            cursor: pointer;
+        }
+
+        h1, h2 { font-family: 'Cormorant Garamond', serif; font-weight: 300; margin-bottom: 10px; }
+        .main-btn {
+            background: transparent; color: #e6d3ea;
+            border: 1px solid rgba(148, 130, 158, 0.4);
+            padding: 12px 30px; cursor: pointer;
+            letter-spacing: 2px; text-transform: uppercase;
+            font-size: 0.65rem; border-radius: 2px;
+        }
+
+        .hidden { display: none !important; }
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px; border-radius: 8px;
+            border: 1px solid rgba(230, 211, 234, 0.08);
+            backdrop-filter: blur(8px);
+            max-width: 360px;
+        }
+
+        #msg-feedback { font-size: 0.5rem; margin-top: 5px; opacity: 0; color: #b8a2c2; transition: 0.5s; }
+
+        @keyframes breathe { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } from { opacity: 0; transform: translateY(15px); } }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+    <canvas id="particles"></canvas>
+
+    <audio id="musica" loop>
+        <source src="piano.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="tela1" class="content">
+        <h1 style="opacity:0; animation: fadeIn 3s forwards;">Fiz isso aqui porque você<br>merece algo único.</h1>
+        <button class="main-btn" onclick="irParaTela2()" style="opacity:0; animation: fadeIn 3s 1.5s forwards;">Entrar</button>
+    </div>
+
+    <div id="tela2" class="content hidden">
+        <h1>Posso te conhecer mais?</h1>
+        <button class="main-btn" onclick="irParaTela3()">Com certeza</button>
+    </div>
+
+    <div id="tela3" class="content hidden card">
+        <div class="photo-stack" onclick="proximaFoto()">
+            <div class="polaroid"><img src="https://i.imgur.com/JUOPvrm.jpeg"><span>nosso momento</span></div>
+            <div class="polaroid"><img src="https://i.imgur.com/JUOPvrm.jpeg"><span>detalhes que gosto</span></div>
+            <div class="polaroid"><img src="https://i.imgur.com/JUOPvrm.jpeg"><span>clique para passar ➔</span></div>
+        </div>
+        
+        <div id="contador" style="font-size: 2rem; color: #b8a2c2; font-family: 'Cormorant Garamond'; line-height: 1;">0</div>
+        <p style="font-size: 0.45rem; letter-spacing: 2px; margin-bottom: 8px;">DIAS DE BOAS RISADAS</p>
+        
+        <p id="frase-dia" style="font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.85rem; min-height: 2rem; margin-bottom: 10px;"></p>
+        
+        <div class="interaction-card">
+            <div class="emojis">
+                <span onclick="enviarStatus('😊', 'Bem')">😊</span>
+                <span onclick="enviarStatus('😴', 'Cansaço')">😴</span>
+                <span onclick="enviarStatus('🤔', 'Pensativa')">🤔</span>
+                <span onclick="enviarStatus('💜', 'Saudade')">💜</span>
+            </div>
+        </div>
+
+        <div class="interaction-card">
+            <div class="proximity-grid">
+                <button class="btn-prox" onclick="enviarStatus('🫂', 'Vem mais perto...')">Vem mais perto</button>
+                <button class="btn-prox" onclick="enviarStatus('🛡️', 'Me dá um espacinho')">Dá um espacinho</button>
+            </div>
+        </div>
+
+        <div class="interaction-card">
+            <div class="thought-counter">
+                <span>Lembrei de você: <strong id="cont-vibe">0</strong>x</span>
+                <span class="star-btn" onclick="somarPensamento()">✨</span>
+            </div>
+            <button class="btn-small" onclick="avisarTotal()">Te contei?</button>
+        </div>
+
+        <button class="btn-travei" onclick="enviarStatus('😶‍🌫️', 'Travei no assunto... puxa aí!')">
+            Travei no assunto... puxa aí!
+        </button>
+
+        <p id="msg-feedback">Aviso enviado! 😉</p>
+    </div>
+
+    <script>
+        const TELEGRAM_TOKEN = '8641544808:AAE6fXciSlfxpyM6NjbKUI_i581w7xhxVWw';
+        const CHAT_ID = '6920026748'; 
+
+        let totalPensamentos = localStorage.getItem('pensamentos') || 0;
+        document.getElementById('cont-vibe').innerText = totalPensamentos;
+
+        function somarPensamento() {
+            totalPensamentos++;
+            document.getElementById('cont-vibe').innerText = totalPensamentos;
+            localStorage.setItem('pensamentos', totalPensamentos);
+        }
+
+        function avisarTotal() {
+            enviarStatus('📊', `Lembrei de você ${totalPensamentos} vezes hoje.`);
+        }
+
+        function proximaFoto() {
+            const stack = document.querySelector('.photo-stack');
+            const photos = stack.querySelectorAll('.polaroid');
+            if (photos.length <= 1) return;
+            const topPhoto = photos[photos.length - 1];
+            topPhoto.classList.add('exit');
+            setTimeout(() => {
+                topPhoto.classList.remove('exit');
+                stack.prepend(topPhoto);
+                stack.querySelectorAll('.polaroid').forEach((p, i) => p.style.zIndex = i);
+            }, 600);
+        }
+
+        function irParaTela2() {
+            document.getElementById('tela1').classList.add('hidden');
+            document.getElementById('tela2').classList.remove('hidden');
+        }
+
+        function irParaTela3() {
+            const audio = document.getElementById('musica');
+            audio.volume = 0.3;
+            audio.play().catch(() => {});
+            document.getElementById('tela2').classList.add('hidden');
+            document.getElementById('tela3').classList.remove('hidden');
+            iniciarContador();
+            mudarFrase();
+        }
+
+        function iniciarContador() {
+            const dataInicio = new Date(2026, 1, 13); 
+            const hoje = new Date();
+            const diff = Math.floor((hoje - dataInicio) / (1000 * 60 * 60 * 24));
+            document.getElementById('contador').innerText = Math.max(0, diff);
+        }
+
+        const frases = [
+            "Seu olhar.", "Seu sorriso.", "Seu jeito de ser.", "Suas manias.",
+            "Suas Piadas.", "Seu jeito esquecida.", "Tua notificação que brilha minha tela.",
+            "A gente perdendo a hora conversando.", "Gosto de como o papo flui fácil."
+        ];
+
+        function mudarFrase() {
+            const index = Math.floor(Math.random() * frases.length);
+            document.getElementById('frase-dia').innerText = frases[index];
+        }
+
+        function enviarStatus(emoji, texto) {
+            const msg = `${emoji} ${texto}`;
+            fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}`)
+            .then(() => {
+                const fb = document.getElementById('msg-feedback');
+                fb.style.opacity = 1;
+                setTimeout(() => fb.style.opacity = 0, 2000);
+            });
+        }
+
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        let dots = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+        class Dot {
+            constructor() { this.reset(); this.y = Math.random() * canvas.height; }
+            reset() { this.x = Math.random() * canvas.width; this.y = canvas.height + 10; this.size = Math.random() * 1.2; this.speedY = Math.random() * 0.2 + 0.1; this.opacity = Math.random() * 0.4; }
+            update() { this.y -= this.speedY; if (this.y < -10) this.reset(); }
+            draw() { ctx.fillStyle = `rgba(230, 211, 234, ${this.opacity})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
+        }
+        for(let i=0; i<40; i++) dots.push(new Dot());
+        function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); dots.forEach(d => { d.update(); d.draw(); }); requestAnimationFrame(animate); }
+        animate();
+    </script>
+</body>
+</html>
